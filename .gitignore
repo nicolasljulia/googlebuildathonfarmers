@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Large local data assets — regenerate via scripts/, or fetch/mount
+# separately. See data/README.md.
+data/koppen/
+data/maxent_tifs/
+data/maxent_suitability.db
+
+.DS_Store

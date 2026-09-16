@@ -1,0 +1,13 @@
+# Earth Engine + data layer
+earthengine-api>=1.7.0
+requests>=2.31.0
+rasterio>=1.5.0
+
+# API surface (temporary local test endpoints — will be replaced/wrapped
+# by the chat/WhatsApp webhook layer)
+fastapi>=0.115.0
+uvicorn>=0.34.0
+pydantic>=2.10.0
+
+# NLU (next phase — intent classification for the chat layer)
+sentence-transformers>=3.0.0
