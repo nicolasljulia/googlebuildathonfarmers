@@ -14,6 +14,8 @@
     --accent-dark: #1b5e20;
     --border: #d1d1d6;
     --danger: #d32f2f;
+    --bubble-bot: #ffffff;
+    --bubble-user: #2e7d32;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -25,6 +27,8 @@
       --accent-dark: #2e7d32;
       --border: #38383a;
       --danger: #ef5350;
+      --bubble-bot: #262628;
+      --bubble-user: #2e7d32;
     }
   }
   :root[data-theme="dark"] {
@@ -36,6 +40,8 @@
     --accent-dark: #2e7d32;
     --border: #38383a;
     --danger: #ef5350;
+    --bubble-bot: #262628;
+    --bubble-user: #2e7d32;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -49,422 +55,278 @@
     overflow-x: hidden;
   }
 
-  .screen {
+  .phone {
     width: 100%;
     max-width: 420px;
     height: 100vh;
     max-height: 900px;
     display: flex;
     flex-direction: column;
-    padding: env(safe-area-inset-top, 20px) 20px calc(20px + env(safe-area-inset-bottom, 0px));
-    overflow-y: auto;
+    background: var(--bg);
   }
 
-  header { text-align: center; padding: 10px 0 4px; flex: 0 0 auto; }
-  header h1 { font-size: 20px; margin: 0 0 4px; }
-  header p { font-size: 13px; color: var(--text-dim); margin: 0; }
-
-  .stage {
-    flex: 1 1 auto;
+  .chat-header {
+    flex: 0 0 auto;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 24px;
+    gap: 10px;
+    padding: calc(env(safe-area-inset-top, 14px) + 6px) 16px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
   }
-  .stage[hidden] { display: none; }
+  .chat-header .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    flex: 0 0 auto;
+  }
+  .chat-header .title { font-size: 16px; font-weight: 700; }
+  .chat-header .status { font-size: 12px; color: var(--text-dim); }
 
-  .crop-step {
-    width: 100%;
+  .thread {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 14px 12px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    align-items: stretch;
+    gap: 2px;
+    -webkit-overflow-scrolling: touch;
   }
-  .crop-step[hidden] { display: none; }
-  .crop-step .icon {
-    font-size: 48px;
-    text-align: center;
+
+  .row { display: flex; margin: 6px 0; }
+  .row.bot { justify-content: flex-start; }
+  .row.user { justify-content: flex-end; }
+
+  .bubble-wrap { max-width: 84%; display: flex; flex-direction: column; }
+  .row.user .bubble-wrap { align-items: flex-end; }
+  .row.bot .bubble-wrap { align-items: flex-start; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
   }
-  .crop-step label {
-    font-size: 14px;
-    font-weight: 600;
+  .row.bot .bubble {
+    background: var(--bubble-bot);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .row.user .bubble {
+    background: var(--bubble-user);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-time {
+    font-size: 11px;
     color: var(--text-dim);
+    margin: 3px 6px 0;
   }
-  select, .crop-input {
+
+  .controls {
+    margin-top: 8px;
+    max-width: 84%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .controls.disabled { opacity: 0.45; pointer-events: none; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 9px 16px;
+    border-radius: 18px;
+    border: 1.5px solid var(--accent);
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .chip:active { background: var(--accent); color: white; }
+
+  .inline-select, .inline-input {
     width: 100%;
-    padding: 14px 14px;
-    font-size: 16px;
+    padding: 11px 12px;
+    font-size: 15px;
     border-radius: 12px;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
     font-family: inherit;
   }
-  select:focus, .crop-input:focus { outline: 2px solid var(--accent); }
-  .crop-input {
-    display: none;
-  }
-  .crop-input.visible { display: block; }
-  .continue-btn {
-    width: 100%;
-    padding: 16px;
-    border-radius: 14px;
+  .inline-select:focus, .inline-input:focus { outline: 2px solid var(--accent); }
+
+  .inline-btn {
+    padding: 12px;
+    border-radius: 12px;
     border: none;
     background: var(--accent);
     color: white;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
   }
-  .continue-btn:disabled { opacity: 0.4; }
-  .continue-btn:active:not(:disabled) { opacity: 0.8; }
-  .continue-btn.secondary {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
+  .inline-btn:disabled { opacity: 0.4; }
+  .inline-btn:active:not(:disabled) { opacity: 0.8; }
 
-  .crop-chip-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 14px;
-    margin-bottom: 4px;
-  }
-  .crop-chip-row .crop-name { font-weight: 600; font-size: 14px; }
-  .crop-chip-row .change-link {
-    background: none; border: none; color: var(--accent);
-    font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px;
-  }
-
+  .locate-row { display: flex; align-items: center; gap: 12px; }
   .locate-btn {
-    width: 200px;
-    height: 200px;
+    width: 64px; height: 64px;
     border-radius: 50%;
     border: none;
     background: var(--accent);
     color: white;
-    font-size: 20px;
-    font-weight: 700;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
     cursor: pointer;
-    transition: transform 0.1s, background 0.2s;
+    flex: 0 0 auto;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
   }
-  .locate-btn:active { transform: scale(0.96); background: var(--accent-dark); }
-  .locate-btn:disabled { opacity: 0.6; }
-  .locate-btn svg { width: 48px; height: 48px; }
-
-  .pulse {
-    animation: pulse 1.4s infinite;
-  }
+  .locate-btn.pulse { animation: pulse 1.4s infinite; }
   @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(46,125,50,0.5); }
-    70% { box-shadow: 0 0 0 30px rgba(46,125,50,0); }
+    70% { box-shadow: 0 0 0 18px rgba(46,125,50,0); }
     100% { box-shadow: 0 0 0 0 rgba(46,125,50,0); }
   }
+  .locate-status { font-size: 13px; color: var(--text-dim); }
+  .locate-status.error { color: var(--danger); }
 
-  .hint { font-size: 14px; color: var(--text-dim); text-align: center; max-width: 260px; }
-
-  .status { font-size: 14px; color: var(--text-dim); text-align: center; min-height: 20px; }
-  .status.error { color: var(--danger); }
-
-  .result-card {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    display: none;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .result-card.visible { display: flex; }
-
-  .coord-row {
+  .typing-bubble {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 15px;
+    gap: 4px;
+    padding: 12px 16px;
   }
-  .coord-row .label { color: var(--text-dim); font-size: 13px; }
-  .coord-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
-
-  .accuracy-note {
-    font-size: 12.5px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(255, 179, 0, 0.15);
-    color: #a86a00;
+  .typing-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    animation: bounce 1.2s infinite;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .accuracy-note { color: #ffca7a; }
-  }
-  :root[data-theme="dark"] .accuracy-note { color: #ffca7a; }
-  .accuracy-note.good {
-    background: rgba(76, 175, 80, 0.15);
-    color: #2e7d32;
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
   }
 
-  .actions { display: flex; gap: 10px; margin-top: 4px; }
-  .action-btn {
-    flex: 1;
-    padding: 12px 10px;
-    border-radius: 12px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .action-btn.primary {
-    background: var(--accent);
-    color: white;
-    border: none;
-  }
-  .action-btn:active { opacity: 0.7; }
-
-  .copied-toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.85);
-    color: white;
-    padding: 10px 18px;
-    border-radius: 20px;
-    font-size: 13px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .copied-toast.show { opacity: 1; }
-
-  footer { flex: 0 0 auto; text-align: center; padding-top: 8px; }
-  .again-link {
-    background: none; border: none; color: var(--accent);
-    font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px;
-  }
-
-  .menu-option {
-    width: 100%;
-    text-align: left;
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .menu-option:active { opacity: 0.7; }
-
-  .result-text {
-    white-space: pre-wrap;
-    font-size: 14px;
-    line-height: 1.5;
+  .composer-spacer {
+    flex: 0 0 auto;
+    height: calc(env(safe-area-inset-bottom, 10px) + 6px);
   }
 </style>
 </head>
 <body>
 
-<div class="screen">
-  <header>
-    <h1>📍 GCropUp</h1>
-    <p id="tagline">Walk to the middle of the field, then tap the button</p>
-  </header>
-
-  <div class="crop-step" id="cropStep">
-    <div class="icon">🌾</div>
+<div class="phone">
+  <div class="chat-header">
+    <div class="avatar">GC</div>
     <div>
-      <label for="cropSelect">What's growing in this field?</label>
-      <select id="cropSelect">
-        <option value="">Select a crop…</option>
-        <option>Corn</option>
-        <option>Soybeans</option>
-        <option>Wheat</option>
-        <option>Alfalfa</option>
-        <option>Cotton</option>
-        <option>Rice</option>
-        <option>Barley</option>
-        <option>Oats</option>
-        <option>Sorghum</option>
-        <option>Hay / Pasture</option>
-        <option value="__other__">Other…</option>
-      </select>
-      <input type="text" class="crop-input" id="cropOther" placeholder="Type the crop name">
-    </div>
-    <button class="continue-btn" id="cropContinueBtn" disabled>Continue</button>
-  </div>
-
-  <div class="crop-step" id="onFieldStep" hidden>
-    <div class="icon">🚜</div>
-    <div class="crop-chip-row">
-      <span class="crop-name">🌱 <span id="cropDisplayOnField"></span></span>
-      <button class="change-link" id="changeCropFromOnFieldBtn">Change</button>
-    </div>
-    <label>Are you on your field right now?</label>
-    <button class="continue-btn" id="onFieldYesBtn">Yes — use my location</button>
-    <button class="continue-btn secondary" id="onFieldNoBtn">No — I'll enter coordinates</button>
-  </div>
-
-  <div class="crop-step" id="manualCoordsStep" hidden>
-    <div class="icon">📌</div>
-    <label>Drop a pin — enter your field's coordinates</label>
-    <input type="number" step="any" class="crop-input visible" id="manualLat" placeholder="Latitude (e.g. 36.6002)">
-    <input type="number" step="any" class="crop-input visible" id="manualLon" placeholder="Longitude (e.g. -121.1015)">
-    <button class="continue-btn" id="manualCoordsContinueBtn" disabled>Use these coordinates</button>
-    <button class="continue-btn secondary" id="manualCoordsBackBtn">Back</button>
-  </div>
-
-  <div class="stage" id="stage" hidden>
-    <div class="crop-chip-row">
-      <span class="crop-name">🌱 <span id="cropDisplay"></span></span>
-      <button class="change-link" id="changeCropBtn">Change</button>
-    </div>
-    <button class="locate-btn" id="locateBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-        <circle cx="12" cy="12" r="8"/>
-      </svg>
-      <span id="btnLabel">Mark This Spot</span>
-    </button>
-
-    <div class="status" id="status"></div>
-
-    <div class="result-card" id="resultCard">
-      <div class="coord-row">
-        <span class="label">Crop</span>
-        <span class="value" id="cropVal">—</span>
-      </div>
-      <div class="coord-row">
-        <span class="label">Latitude</span>
-        <span class="value" id="latVal">—</span>
-      </div>
-      <div class="coord-row">
-        <span class="label">Longitude</span>
-        <span class="value" id="lonVal">—</span>
-      </div>
-      <div class="coord-row">
-        <span class="label">Accuracy</span>
-        <span class="value" id="accVal">—</span>
-      </div>
-      <div class="coord-row">
-        <span class="label">Time</span>
-        <span class="value" id="timeVal">—</span>
-      </div>
-
-      <div class="accuracy-note" id="accuracyNote" style="display:none;"></div>
-
-      <div class="actions">
-        <button class="action-btn" id="copyBtn">Copy</button>
-        <button class="action-btn" id="mapBtn">View on Map</button>
-        <button class="action-btn" id="shareBtn">Share</button>
-      </div>
-      <button class="continue-btn" id="useLocationBtn">Use this location</button>
+      <div class="title">GCropUp</div>
+      <div class="status" id="headerStatus">Online</div>
     </div>
   </div>
-
-  <div class="crop-step" id="menuStep" hidden>
-    <div class="icon">🛰️</div>
-    <label id="menuLabel">What would you like to check?</label>
-    <div id="menuOptions"></div>
-  </div>
-
-  <div class="crop-step" id="resultStep" hidden>
-    <div class="result-card visible">
-      <div class="result-text" id="resultText"></div>
-    </div>
-    <button class="continue-btn" id="continueYesBtn">Yes — check something else</button>
-    <button class="continue-btn secondary" id="continueNoBtn">No, that's all</button>
-  </div>
-
-  <div class="crop-step" id="doneStep" hidden>
-    <div class="icon">✅</div>
-    <div class="result-text" id="doneText" style="text-align:center;"></div>
-    <button class="continue-btn" id="startOverBtn">Start over</button>
-  </div>
-
-  <div class="status error" id="apiError"></div>
-
-  <footer>
-    <button class="again-link" id="againBtn" style="display:none;">Mark a different spot</button>
-  </footer>
+  <div class="thread" id="thread"></div>
+  <div class="composer-spacer"></div>
 </div>
-
-<div class="copied-toast" id="toast">Copied to clipboard</div>
 
 <script>
 (function () {
   const API_BASE = window.location.origin;
-
-  const cropStep = document.getElementById('cropStep');
-  const cropSelect = document.getElementById('cropSelect');
-  const cropOther = document.getElementById('cropOther');
-  const cropContinueBtn = document.getElementById('cropContinueBtn');
-  const stage = document.getElementById('stage');
-  const cropDisplay = document.getElementById('cropDisplay');
-  const cropVal = document.getElementById('cropVal');
-  const changeCropBtn = document.getElementById('changeCropBtn');
-
-  const onFieldStep = document.getElementById('onFieldStep');
-  const cropDisplayOnField = document.getElementById('cropDisplayOnField');
-  const changeCropFromOnFieldBtn = document.getElementById('changeCropFromOnFieldBtn');
-  const onFieldYesBtn = document.getElementById('onFieldYesBtn');
-  const onFieldNoBtn = document.getElementById('onFieldNoBtn');
-
-  const manualCoordsStep = document.getElementById('manualCoordsStep');
-  const manualLat = document.getElementById('manualLat');
-  const manualLon = document.getElementById('manualLon');
-  const manualCoordsContinueBtn = document.getElementById('manualCoordsContinueBtn');
-  const manualCoordsBackBtn = document.getElementById('manualCoordsBackBtn');
-
-  const menuStep = document.getElementById('menuStep');
-  const menuLabel = document.getElementById('menuLabel');
-  const menuOptions = document.getElementById('menuOptions');
-
-  const resultStep = document.getElementById('resultStep');
-  const resultText = document.getElementById('resultText');
-  const continueYesBtn = document.getElementById('continueYesBtn');
-  const continueNoBtn = document.getElementById('continueNoBtn');
-
-  const doneStep = document.getElementById('doneStep');
-  const doneText = document.getElementById('doneText');
-  const startOverBtn = document.getElementById('startOverBtn');
-
-  const apiError = document.getElementById('apiError');
-  const tagline = document.getElementById('tagline');
+  const thread = document.getElementById('thread');
+  const headerStatus = document.getElementById('headerStatus');
 
   let cropType = '';
   let sessionId = null;
+  let allCrops = [];
 
-  function showOnly(el) {
-    [cropStep, onFieldStep, manualCoordsStep, stage, menuStep, resultStep, doneStep].forEach(s => {
-      s.hidden = s !== el;
-    });
+  function scrollToBottom() {
+    thread.scrollTop = thread.scrollHeight;
   }
 
-  function showApiError(msg) {
-    apiError.textContent = msg;
+  function fmtTime() {
+    return new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
   }
-  function clearApiError() {
-    apiError.textContent = '';
+
+  function addBotBubble(text) {
+    const row = document.createElement('div');
+    row.className = 'row bot';
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = fmtTime();
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+    row.appendChild(wrap);
+    thread.appendChild(row);
+    scrollToBottom();
+    return wrap;
+  }
+
+  function addUserBubble(text) {
+    const row = document.createElement('div');
+    row.className = 'row user';
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = fmtTime();
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+    row.appendChild(wrap);
+    thread.appendChild(row);
+    scrollToBottom();
+  }
+
+  function addTyping() {
+    const row = document.createElement('div');
+    row.className = 'row bot';
+    row.id = 'typingRow';
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble typing-bubble';
+    bubble.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+    wrap.appendChild(bubble);
+    row.appendChild(wrap);
+    thread.appendChild(row);
+    scrollToBottom();
+    return row;
+  }
+
+  function removeTyping() {
+    const row = document.getElementById('typingRow');
+    if (row) row.remove();
+  }
+
+  function addControls(bubbleWrap) {
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    bubbleWrap.appendChild(controls);
+    return controls;
+  }
+
+  function disable(controls) {
+    controls.classList.add('disabled');
   }
 
   async function api(path, body) {
-    clearApiError();
     const res = await fetch(API_BASE + path, {
       method: 'POST',
       headers: {'content-type': 'application/json'},
@@ -477,305 +339,320 @@
     return res.json();
   }
 
-  fetch(API_BASE + '/crops').then(r => r.json()).then(data => {
-    if (!data.crops || !data.crops.length) return;
-    const current = cropSelect.value;
-    cropSelect.innerHTML = '<option value="">Select a crop…</option>';
-    data.crops.forEach(c => {
+  function showError(msg) {
+    removeTyping();
+    addBotBubble('Error: ' + msg);
+  }
+
+  function askCrop() {
+    const wrap = addBotBubble("Hi, I'm GCropUp. What's growing in your field?");
+    const controls = addControls(wrap);
+
+    const select = document.createElement('select');
+    select.className = 'inline-select';
+    const placeholder = document.createElement('option');
+    placeholder.textContent = 'Select a crop…';
+    placeholder.value = '';
+    select.appendChild(placeholder);
+    const shortList = ['Corn', 'Soybeans', 'Wheat', 'Alfalfa', 'Cotton', 'Rice', 'Barley', 'Oats', 'Sorghum', 'Hay / Pasture'];
+    (allCrops.length ? allCrops : shortList).forEach(c => {
       const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = c;
-      cropSelect.appendChild(opt);
+      opt.value = c; opt.textContent = c;
+      select.appendChild(opt);
     });
     const otherOpt = document.createElement('option');
     otherOpt.value = '__other__';
     otherOpt.textContent = 'Other…';
-    cropSelect.appendChild(otherOpt);
-  }).catch(() => { /* keep the built-in short list if the API isn't reachable */ });
+    select.appendChild(otherOpt);
 
-  function currentCropValue() {
-    if (cropSelect.value === '__other__') return cropOther.value.trim();
-    return cropSelect.value;
-  }
+    const otherInput = document.createElement('input');
+    otherInput.type = 'text';
+    otherInput.className = 'inline-input';
+    otherInput.placeholder = 'Type the crop name';
+    otherInput.style.display = 'none';
 
-  function refreshContinueEnabled() {
-    cropContinueBtn.disabled = currentCropValue().length === 0;
-  }
+    const sendBtn = document.createElement('button');
+    sendBtn.className = 'inline-btn';
+    sendBtn.textContent = 'Send';
+    sendBtn.disabled = true;
 
-  cropSelect.addEventListener('change', () => {
-    cropOther.classList.toggle('visible', cropSelect.value === '__other__');
-    if (cropSelect.value === '__other__') {
-      cropOther.focus();
+    function currentValue() {
+      if (select.value === '__other__') return otherInput.value.trim();
+      return select.value;
     }
-    refreshContinueEnabled();
-  });
-  cropOther.addEventListener('input', refreshContinueEnabled);
+    function refresh() { sendBtn.disabled = currentValue().length === 0; }
 
-  cropContinueBtn.addEventListener('click', () => {
-    cropType = currentCropValue();
-    if (!cropType) return;
-    cropDisplayOnField.textContent = cropType;
-    showOnly(onFieldStep);
-  });
+    select.addEventListener('change', () => {
+      otherInput.style.display = select.value === '__other__' ? 'block' : 'none';
+      if (select.value === '__other__') otherInput.focus();
+      refresh();
+    });
+    otherInput.addEventListener('input', refresh);
 
-  function backToCropStep() {
-    showOnly(cropStep);
-  }
-  changeCropFromOnFieldBtn.addEventListener('click', backToCropStep);
-  changeCropBtn.addEventListener('click', backToCropStep);
+    sendBtn.addEventListener('click', () => {
+      const value = currentValue();
+      if (!value) return;
+      cropType = value;
+      disable(controls);
+      addUserBubble(value);
+      askOnField();
+    });
 
-  onFieldYesBtn.addEventListener('click', () => {
-    cropDisplay.textContent = cropType;
-    showOnly(stage);
-  });
-  onFieldNoBtn.addEventListener('click', () => {
-    showOnly(manualCoordsStep);
-  });
-
-  function refreshManualEnabled() {
-    manualCoordsContinueBtn.disabled = manualLat.value === '' || manualLon.value === '';
-  }
-  manualLat.addEventListener('input', refreshManualEnabled);
-  manualLon.addEventListener('input', refreshManualEnabled);
-  manualCoordsBackBtn.addEventListener('click', () => showOnly(onFieldStep));
-  manualCoordsContinueBtn.addEventListener('click', () => {
-    const lat = parseFloat(manualLat.value);
-    const lon = parseFloat(manualLon.value);
-    if (Number.isNaN(lat) || Number.isNaN(lon)) return;
-    beginAnalysis(false, lat, lon);
-  });
-
-  const locateBtn = document.getElementById('locateBtn');
-  const btnLabel = document.getElementById('btnLabel');
-  const statusEl = document.getElementById('status');
-  const resultCard = document.getElementById('resultCard');
-  const latVal = document.getElementById('latVal');
-  const lonVal = document.getElementById('lonVal');
-  const accVal = document.getElementById('accVal');
-  const timeVal = document.getElementById('timeVal');
-  const accuracyNote = document.getElementById('accuracyNote');
-  const copyBtn = document.getElementById('copyBtn');
-  const mapBtn = document.getElementById('mapBtn');
-  const shareBtn = document.getElementById('shareBtn');
-  const useLocationBtn = document.getElementById('useLocationBtn');
-  const toast = document.getElementById('toast');
-  const againBtn = document.getElementById('againBtn');
-
-  let lastFix = null;
-  let watchId = null;
-
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1600);
+    controls.appendChild(select);
+    controls.appendChild(otherInput);
+    controls.appendChild(sendBtn);
+    scrollToBottom();
   }
 
-  function fmtCoord(n) {
-    return n.toFixed(6) + '°';
+  function askOnField() {
+    const wrap = addBotBubble('Got it. Are you on your field right now?');
+    const controls = addControls(wrap);
+    const chipRow = document.createElement('div');
+    chipRow.className = 'chip-row';
+
+    const yesChip = document.createElement('button');
+    yesChip.className = 'chip';
+    yesChip.textContent = 'Yes, I\'m here';
+    yesChip.addEventListener('click', () => {
+      disable(controls);
+      addUserBubble("Yes, I'm here");
+      askGpsLocation();
+    });
+
+    const noChip = document.createElement('button');
+    noChip.className = 'chip';
+    noChip.textContent = "No, I'm not";
+    noChip.addEventListener('click', () => {
+      disable(controls);
+      addUserBubble("No, I'm not");
+      askManualLocation();
+    });
+
+    chipRow.appendChild(yesChip);
+    chipRow.appendChild(noChip);
+    controls.appendChild(chipRow);
+    scrollToBottom();
   }
 
-  function setBusy(isBusy) {
-    locateBtn.disabled = isBusy;
-    if (isBusy) {
-      locateBtn.classList.add('pulse');
-      btnLabel.textContent = 'Locating…';
-    } else {
-      locateBtn.classList.remove('pulse');
-      btnLabel.textContent = 'Mark This Spot';
-    }
-  }
+  function askGpsLocation() {
+    const wrap = addBotBubble('Stand in the middle of the field, then tap the button to share your location.');
+    const controls = addControls(wrap);
 
-  function stopWatch() {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
-  }
+    const row = document.createElement('div');
+    row.className = 'locate-row';
+    const btn = document.createElement('button');
+    btn.className = 'locate-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>';
+    const status = document.createElement('div');
+    status.className = 'locate-status';
+    row.appendChild(btn);
+    row.appendChild(status);
+    controls.appendChild(row);
 
-  function renderFix(pos) {
-    const { latitude, longitude, accuracy } = pos.coords;
-    lastFix = { latitude, longitude, accuracy, time: new Date(pos.timestamp) };
-
-    cropVal.textContent = cropType || '—';
-    latVal.textContent = fmtCoord(latitude);
-    lonVal.textContent = fmtCoord(longitude);
-    accVal.textContent = '± ' + Math.round(accuracy) + ' m';
-    timeVal.textContent = lastFix.time.toLocaleTimeString();
-
-    if (accuracy > 15) {
-      accuracyNote.style.display = 'block';
-      accuracyNote.classList.remove('good');
-      accuracyNote.textContent = 'Accuracy is ' + Math.round(accuracy) + ' m — for a tighter fix, wait a few seconds under open sky and tap again.';
-    } else {
-      accuracyNote.style.display = 'block';
-      accuracyNote.classList.add('good');
-      accuracyNote.textContent = 'Good fix (± ' + Math.round(accuracy) + ' m).';
+    let watchId = null;
+    function stopWatch() {
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     }
 
-    resultCard.classList.add('visible');
-    againBtn.style.display = 'inline-block';
-    statusEl.textContent = '';
-    statusEl.classList.remove('error');
-  }
-
-  function errorMessage(err) {
-    switch (err.code) {
-      case err.PERMISSION_DENIED:
-        return "Location access was denied. Enable location for this page in your phone's settings and try again.";
-      case err.POSITION_UNAVAILABLE:
-        return "Couldn't get a location fix. Make sure you're outdoors with a clear view of the sky.";
-      case err.TIMEOUT:
-        return "Location request timed out. Try again — it can help to hold still for a few seconds.";
-      default:
-        return "Something went wrong getting your location. Please try again.";
-    }
-  }
-
-  function locate() {
-    if (!('geolocation' in navigator)) {
-      statusEl.textContent = "This browser doesn't support location. Try opening this page in a standard mobile browser (Safari or Chrome).";
-      statusEl.classList.add('error');
-      return;
-    }
-
-    setBusy(true);
-    statusEl.textContent = 'Getting a GPS fix — hold still…';
-    statusEl.classList.remove('error');
-    resultCard.classList.remove('visible');
-    stopWatch();
-
-    let bestFix = null;
-    let settleTimer = null;
-
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (!bestFix || pos.coords.accuracy < bestFix.coords.accuracy) {
-          bestFix = pos;
-        }
-        if (!settleTimer) {
-          settleTimer = setTimeout(() => {
-            stopWatch();
-            setBusy(false);
-            if (bestFix) renderFix(bestFix);
-          }, 4000);
-        }
-      },
-      (err) => {
-        stopWatch();
-        setBusy(false);
-        statusEl.textContent = errorMessage(err);
-        statusEl.classList.add('error');
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-    );
-  }
-
-  copyBtn.addEventListener('click', async () => {
-    if (!lastFix) return;
-    const text = (cropType ? cropType + ': ' : '') + lastFix.latitude.toFixed(6) + ', ' + lastFix.longitude.toFixed(6);
-    try {
-      await navigator.clipboard.writeText(text);
-      showToast('Copied: ' + text);
-    } catch (e) {
-      showToast('Copy failed — coordinates: ' + text);
-    }
-  });
-
-  mapBtn.addEventListener('click', () => {
-    if (!lastFix) return;
-    const url = 'https://www.google.com/maps?q=' + lastFix.latitude.toFixed(6) + ',' + lastFix.longitude.toFixed(6);
-    window.open(url, '_blank', 'noopener');
-  });
-
-  shareBtn.addEventListener('click', async () => {
-    if (!lastFix) return;
-    const text = (cropType ? cropType + ' field — ' : 'Field location: ') + lastFix.latitude.toFixed(6) + ', ' + lastFix.longitude.toFixed(6);
-    const url = 'https://www.google.com/maps?q=' + lastFix.latitude.toFixed(6) + ',' + lastFix.longitude.toFixed(6);
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: cropType ? cropType + ' Field Location' : 'Field Location', text, url });
-      } catch (e) { }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text + ' — ' + url);
-        showToast('Copied link to clipboard');
-      } catch (e) {
-        showToast(text);
+    btn.addEventListener('click', () => {
+      if (!('geolocation' in navigator)) {
+        status.textContent = "This browser doesn't support location.";
+        status.classList.add('error');
+        return;
       }
-    }
-  });
+      btn.classList.add('pulse');
+      btn.disabled = true;
+      status.textContent = 'Getting a GPS fix — hold still…';
+      status.classList.remove('error');
 
-  useLocationBtn.addEventListener('click', () => {
-    if (!lastFix) return;
-    beginAnalysis(true, lastFix.latitude, lastFix.longitude);
-  });
+      let bestFix = null;
+      let settleTimer = null;
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (!bestFix || pos.coords.accuracy < bestFix.coords.accuracy) bestFix = pos;
+          if (!settleTimer) {
+            settleTimer = setTimeout(() => {
+              stopWatch();
+              btn.classList.remove('pulse');
+              if (bestFix) {
+                const { latitude, longitude, accuracy } = bestFix.coords;
+                disable(controls);
+                addUserBubble(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (±${Math.round(accuracy)}m)`);
+                beginAnalysis(true, latitude, longitude);
+              } else {
+                btn.disabled = false;
+                status.textContent = "Couldn't get a fix — try again.";
+                status.classList.add('error');
+              }
+            }, 4000);
+          }
+        },
+        (err) => {
+          stopWatch();
+          btn.classList.remove('pulse');
+          btn.disabled = false;
+          status.textContent = err.code === err.PERMISSION_DENIED
+            ? 'Location access denied — enable it in settings and try again.'
+            : "Couldn't get your location. Try again outdoors.";
+          status.classList.add('error');
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+      );
+    });
 
-  locateBtn.addEventListener('click', locate);
-  againBtn.addEventListener('click', locate);
+    scrollToBottom();
+  }
+
+  function askManualLocation() {
+    const wrap = addBotBubble("No problem. Send me your field's coordinates.");
+    const controls = addControls(wrap);
+
+    const lat = document.createElement('input');
+    lat.type = 'number'; lat.step = 'any'; lat.className = 'inline-input';
+    lat.placeholder = 'Latitude (e.g. 36.6002)';
+    const lon = document.createElement('input');
+    lon.type = 'number'; lon.step = 'any'; lon.className = 'inline-input';
+    lon.placeholder = 'Longitude (e.g. -121.1015)';
+    const sendBtn = document.createElement('button');
+    sendBtn.className = 'inline-btn';
+    sendBtn.textContent = 'Send location';
+    sendBtn.disabled = true;
+
+    function refresh() { sendBtn.disabled = lat.value === '' || lon.value === ''; }
+    lat.addEventListener('input', refresh);
+    lon.addEventListener('input', refresh);
+
+    sendBtn.addEventListener('click', () => {
+      const latVal = parseFloat(lat.value), lonVal = parseFloat(lon.value);
+      if (Number.isNaN(latVal) || Number.isNaN(lonVal)) return;
+      disable(controls);
+      addUserBubble(`${latVal}, ${lonVal}`);
+      beginAnalysis(false, latVal, lonVal);
+    });
+
+    controls.appendChild(lat);
+    controls.appendChild(lon);
+    controls.appendChild(sendBtn);
+    scrollToBottom();
+  }
 
   async function beginAnalysis(onField, lat, lon) {
-    tagline.textContent = 'Running analysis…';
+    headerStatus.textContent = 'typing…';
+    addTyping();
     try {
       const started = await api('/chat/start');
       sessionId = started.session_id;
       await api(`/chat/${sessionId}/reply`, {value: cropType});
       await api(`/chat/${sessionId}/reply`, {value: onField ? 'yes' : 'no'});
-      const menuPrompt = await api(`/chat/${sessionId}/reply`, {value: {lat, lon}});
-      renderServerPrompt(menuPrompt);
+      const prompt = await api(`/chat/${sessionId}/reply`, {value: {lat, lon}});
+      removeTyping();
+      headerStatus.textContent = 'Online';
+      renderServerPrompt(prompt);
     } catch (e) {
-      showApiError('Could not reach the analysis server: ' + e.message);
+      headerStatus.textContent = 'Online';
+      showError('Could not reach the analysis server: ' + e.message);
     }
   }
 
   function renderServerPrompt(prompt) {
-    tagline.textContent = 'GCropUp';
     if (prompt.stage === 'AWAITING_FEATURE_CHOICE') {
-      menuLabel.textContent = prompt.message;
-      menuOptions.innerHTML = '';
+      const wrap = addBotBubble(prompt.message);
+      const controls = addControls(wrap);
+      const chipRow = document.createElement('div');
+      chipRow.className = 'chip-row';
       prompt.options.forEach(o => {
-        const btn = document.createElement('button');
-        btn.className = 'menu-option';
-        btn.textContent = o.label;
-        btn.style.marginBottom = '10px';
-        btn.addEventListener('click', () => sendReply(o.id));
-        menuOptions.appendChild(btn);
+        const chip = document.createElement('button');
+        chip.className = 'chip';
+        chip.textContent = o.label;
+        chip.addEventListener('click', () => {
+          disable(controls);
+          addUserBubble(o.label);
+          sendReply(o.id);
+        });
+        chipRow.appendChild(chip);
       });
-      showOnly(menuStep);
+      controls.appendChild(chipRow);
+      scrollToBottom();
     } else if (prompt.stage === 'AWAITING_CONTINUE') {
-      resultText.textContent = prompt.message.replace(/\n\nWould you like to check anything else\?$/, '');
-      showOnly(resultStep);
+      const resultMsg = prompt.message.replace(/\n\nWould you like to check anything else\?$/, '');
+      addBotBubble(resultMsg);
+      setTimeout(() => {
+        const wrap = addBotBubble('Would you like to check anything else?');
+        const controls = addControls(wrap);
+        const chipRow = document.createElement('div');
+        chipRow.className = 'chip-row';
+        const yesChip = document.createElement('button');
+        yesChip.className = 'chip';
+        yesChip.textContent = 'Yes';
+        yesChip.addEventListener('click', () => {
+          disable(controls);
+          addUserBubble('Yes');
+          sendReply('yes');
+        });
+        const noChip = document.createElement('button');
+        noChip.className = 'chip';
+        noChip.textContent = 'No, that\'s all';
+        noChip.addEventListener('click', () => {
+          disable(controls);
+          addUserBubble("No, that's all");
+          sendReply('no');
+        });
+        chipRow.appendChild(yesChip);
+        chipRow.appendChild(noChip);
+        controls.appendChild(chipRow);
+        scrollToBottom();
+      }, 350);
     } else if (prompt.stage === 'DONE') {
-      doneText.textContent = prompt.message;
-      showOnly(doneStep);
+      addBotBubble(prompt.message);
+      setTimeout(() => {
+        const wrap = addBotBubble('Want to check another field?');
+        const controls = addControls(wrap);
+        const chipRow = document.createElement('div');
+        chipRow.className = 'chip-row';
+        const startOverChip = document.createElement('button');
+        startOverChip.className = 'chip';
+        startOverChip.textContent = 'Start over';
+        startOverChip.addEventListener('click', () => {
+          disable(controls);
+          addUserBubble('Start over');
+          cropType = '';
+          sessionId = null;
+          askCrop();
+        });
+        chipRow.appendChild(startOverChip);
+        controls.appendChild(chipRow);
+        scrollToBottom();
+      }, 350);
     }
   }
 
   async function sendReply(value) {
+    headerStatus.textContent = 'typing…';
+    addTyping();
     try {
       const prompt = await api(`/chat/${sessionId}/reply`, {value});
+      removeTyping();
+      headerStatus.textContent = 'Online';
       renderServerPrompt(prompt);
     } catch (e) {
-      showApiError('Request failed: ' + e.message);
+      headerStatus.textContent = 'Online';
+      showError('Request failed: ' + e.message);
     }
   }
 
-  continueYesBtn.addEventListener('click', () => sendReply('yes'));
-  continueNoBtn.addEventListener('click', () => sendReply('no'));
+  async function init() {
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
+      const data = await Promise.race([
+        fetch(API_BASE + '/crops').then(r => r.json()),
+        timeout,
+      ]);
+      if (data.crops && data.crops.length) allCrops = data.crops;
+    } catch (e) { }
+    askCrop();
+  }
 
-  startOverBtn.addEventListener('click', () => {
-    cropType = '';
-    sessionId = null;
-    lastFix = null;
-    cropSelect.value = '';
-    cropOther.value = '';
-    cropOther.classList.remove('visible');
-    manualLat.value = '';
-    manualLon.value = '';
-    resultCard.classList.remove('visible');
-    againBtn.style.display = 'none';
-    refreshContinueEnabled();
-    showOnly(cropStep);
-  });
+  init();
 })();
 </script>
 
