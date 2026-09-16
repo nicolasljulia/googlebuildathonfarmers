@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Field Locator</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --text: #1c1c1e;
+    --text-dim: #6e6e73;
+    --accent: #2e7d32;
+    --accent-dark: #1b5e20;
+    --border: #d1d1d6;
+    --danger: #d32f2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000;
+      --surface: #1c1c1e;
+      --text: #f5f5f7;
+      --text-dim: #98989d;
+      --accent: #43a047;
+      --accent-dark: #2e7d32;
+      --border: #38383a;
+      --danger: #ef5350;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --text: #f5f5f7;
+    --text-dim: #98989d;
+    --accent: #43a047;
+    --accent-dark: #2e7d32;
+    --border: #38383a;
+    --danger: #ef5350;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    overflow-x: hidden;
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 900px;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top, 20px) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  header { text-align: center; padding: 10px 0 4px; flex: 0 0 auto; }
+  header h1 { font-size: 20px; margin: 0 0 4px; }
+  header p { font-size: 13px; color: var(--text-dim); margin: 0; }
+
+  .stage {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .stage[hidden] { display: none; }
+
+  .crop-step {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: stretch;
+  }
+  .crop-step .icon {
+    font-size: 48px;
+    text-align: center;
+  }
+  .crop-step label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  select, .crop-input {
+    width: 100%;
+    padding: 14px 14px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+  }
+  select:focus, .crop-input:focus { outline: 2px solid var(--accent); }
+  .crop-input {
+    display: none;
+  }
+  .crop-input.visible { display: block; }
+  .continue-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .continue-btn:disabled { opacity: 0.4; }
+  .continue-btn:active:not(:disabled) { opacity: 0.8; }
+
+  .crop-chip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+  }
+  .crop-chip-row .crop-name { font-weight: 600; font-size: 14px; }
+  .crop-chip-row .change-link {
+    background: none; border: none; color: var(--accent);
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px;
+  }
+
+  .locate-btn {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+  }
+  .locate-btn:active { transform: scale(0.96); background: var(--accent-dark); }
+  .locate-btn:disabled { opacity: 0.6; }
+  .locate-btn svg { width: 48px; height: 48px; }
+
+  .pulse {
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(46,125,50,0.5); }
+    70% { box-shadow: 0 0 0 30px rgba(46,125,50,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,125,50,0); }
+  }
+
+  .hint { font-size: 14px; color: var(--text-dim); text-align: center; max-width: 260px; }
+
+  .status { font-size: 14px; color: var(--text-dim); text-align: center; min-height: 20px; }
+  .status.error { color: var(--danger); }
+
+  .result-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .result-card.visible { display: flex; }
+
+  .coord-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 15px;
+  }
+  .coord-row .label { color: var(--text-dim); font-size: 13px; }
+  .coord-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .accuracy-note {
+    font-size: 12.5px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 179, 0, 0.15);
+    color: #a86a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .accuracy-note { color: #ffca7a; }
+  }
+  :root[data-theme="dark"] .accuracy-note { color: #ffca7a; }
+  .accuracy-note.good {
+    background: rgba(76, 175, 80, 0.15);
+    color: #2e7d32;
+  }
+
+  .actions { display: flex; gap: 10px; margin-top: 4px; }
+  .action-btn {
+    flex: 1;
+    padding: 12px 10px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .action-btn.primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+  }
+  .action-btn:active { opacity: 0.7; }
+
+  .copied-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .copied-toast.show { opacity: 1; }
+
+  footer { flex: 0 0 auto; text-align: center; padding-top: 8px; }
+  .again-link {
+    background: none; border: none; color: var(--accent);
+    font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <header>
+    <h1>📍 Field Locator</h1>
+    <p>Walk to the middle of the field, then tap the button</p>
+  </header>
+
+  <div class="crop-step" id="cropStep">
+    <div class="icon">🌾</div>
+    <div>
+      <label for="cropSelect">What's growing in this field?</label>
+      <select id="cropSelect">
+        <option value="">Select a crop…</option>
+        <option>Corn</option>
+        <option>Soybeans</option>
+        <option>Wheat</option>
+        <option>Alfalfa</option>
+        <option>Cotton</option>
+        <option>Rice</option>
+        <option>Barley</option>
+        <option>Oats</option>
+        <option>Sorghum</option>
+        <option>Hay / Pasture</option>
+        <option value="__other__">Other…</option>
+      </select>
+      <input type="text" class="crop-input" id="cropOther" placeholder="Type the crop name">
+    </div>
+    <button class="continue-btn" id="cropContinueBtn" disabled>Continue</button>
+  </div>
+
+  <div class="stage" id="stage" hidden>
+    <div class="crop-chip-row">
+      <span class="crop-name">🌱 <span id="cropDisplay"></span></span>
+      <button class="change-link" id="changeCropBtn">Change</button>
+    </div>
+    <button class="locate-btn" id="locateBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        <circle cx="12" cy="12" r="8"/>
+      </svg>
+      <span id="btnLabel">Mark This Spot</span>
+    </button>
+
+    <div class="status" id="status"></div>
+
+    <div class="result-card" id="resultCard">
+      <div class="coord-row">
+        <span class="label">Crop</span>
+        <span class="value" id="cropVal">—</span>
+      </div>
+      <div class="coord-row">
+        <span class="label">Latitude</span>
+        <span class="value" id="latVal">—</span>
+      </div>
+      <div class="coord-row">
+        <span class="label">Longitude</span>
+        <span class="value" id="lonVal">—</span>
+      </div>
+      <div class="coord-row">
+        <span class="label">Accuracy</span>
+        <span class="value" id="accVal">—</span>
+      </div>
+      <div class="coord-row">
+        <span class="label">Time</span>
+        <span class="value" id="timeVal">—</span>
+      </div>
+
+      <div class="accuracy-note" id="accuracyNote" style="display:none;"></div>
+
+      <div class="actions">
+        <button class="action-btn" id="copyBtn">Copy</button>
+        <button class="action-btn" id="mapBtn">View on Map</button>
+        <button class="action-btn primary" id="shareBtn">Share</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <button class="again-link" id="againBtn" style="display:none;">Mark a different spot</button>
+  </footer>
+</div>
+
+<div class="copied-toast" id="toast">Copied to clipboard</div>
+
+<script>
+(function () {
+  const cropStep = document.getElementById('cropStep');
+  const cropSelect = document.getElementById('cropSelect');
+  const cropOther = document.getElementById('cropOther');
+  const cropContinueBtn = document.getElementById('cropContinueBtn');
+  const stage = document.getElementById('stage');
+  const cropDisplay = document.getElementById('cropDisplay');
+  const cropVal = document.getElementById('cropVal');
+  const changeCropBtn = document.getElementById('changeCropBtn');
+
+  let cropType = '';
+
+  function currentCropValue() {
+    if (cropSelect.value === '__other__') return cropOther.value.trim();
+    return cropSelect.value;
+  }
+
+  function refreshContinueEnabled() {
+    cropContinueBtn.disabled = currentCropValue().length === 0;
+  }
+
+  cropSelect.addEventListener('change', () => {
+    cropOther.classList.toggle('visible', cropSelect.value === '__other__');
+    if (cropSelect.value === '__other__') {
+      cropOther.focus();
+    }
+    refreshContinueEnabled();
+  });
+  cropOther.addEventListener('input', refreshContinueEnabled);
+
+  cropContinueBtn.addEventListener('click', () => {
+    cropType = currentCropValue();
+    if (!cropType) return;
+    cropDisplay.textContent = cropType;
+    cropStep.hidden = true;
+    stage.hidden = false;
+  });
+
+  changeCropBtn.addEventListener('click', () => {
+    stage.hidden = true;
+    cropStep.hidden = false;
+  });
+
+  const locateBtn = document.getElementById('locateBtn');
+  const btnLabel = document.getElementById('btnLabel');
+  const statusEl = document.getElementById('status');
+  const resultCard = document.getElementById('resultCard');
+  const latVal = document.getElementById('latVal');
+  const lonVal = document.getElementById('lonVal');
+  const accVal = document.getElementById('accVal');
+  const timeVal = document.getElementById('timeVal');
+  const accuracyNote = document.getElementById('accuracyNote');
+  const copyBtn = document.getElementById('copyBtn');
+  const mapBtn = document.getElementById('mapBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const toast = document.getElementById('toast');
+  const againBtn = document.getElementById('againBtn');
+
+  let lastFix = null;
+  let watchId = null;
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1600);
+  }
+
+  function fmtCoord(n) {
+    return n.toFixed(6) + '°';
+  }
+
+  function setBusy(isBusy) {
+    locateBtn.disabled = isBusy;
+    if (isBusy) {
+      locateBtn.classList.add('pulse');
+      btnLabel.textContent = 'Locating…';
+    } else {
+      locateBtn.classList.remove('pulse');
+      btnLabel.textContent = 'Mark This Spot';
+    }
+  }
+
+  function stopWatch() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  }
+
+  function renderFix(pos) {
+    const { latitude, longitude, accuracy } = pos.coords;
+    lastFix = { latitude, longitude, accuracy, time: new Date(pos.timestamp) };
+
+    cropVal.textContent = cropType || '—';
+    latVal.textContent = fmtCoord(latitude);
+    lonVal.textContent = fmtCoord(longitude);
+    accVal.textContent = '± ' + Math.round(accuracy) + ' m';
+    timeVal.textContent = lastFix.time.toLocaleTimeString();
+
+    if (accuracy > 15) {
+      accuracyNote.style.display = 'block';
+      accuracyNote.classList.remove('good');
+      accuracyNote.textContent = 'Accuracy is ' + Math.round(accuracy) + ' m — for a tighter fix, wait a few seconds under open sky and tap again.';
+    } else {
+      accuracyNote.style.display = 'block';
+      accuracyNote.classList.add('good');
+      accuracyNote.textContent = 'Good fix (± ' + Math.round(accuracy) + ' m).';
+    }
+
+    resultCard.classList.add('visible');
+    againBtn.style.display = 'inline-block';
+    statusEl.textContent = '';
+    statusEl.classList.remove('error');
+  }
+
+  function errorMessage(err) {
+    switch (err.code) {
+      case err.PERMISSION_DENIED:
+        return "Location access was denied. Enable location for this page in your phone's settings and try again.";
+      case err.POSITION_UNAVAILABLE:
+        return "Couldn't get a location fix. Make sure you're outdoors with a clear view of the sky.";
+      case err.TIMEOUT:
+        return "Location request timed out. Try again — it can help to hold still for a few seconds.";
+      default:
+        return "Something went wrong getting your location. Please try again.";
+    }
+  }
+
+  function locate() {
+    if (!('geolocation' in navigator)) {
+      statusEl.textContent = "This browser doesn't support location. Try opening this page in a standard mobile browser (Safari or Chrome).";
+      statusEl.classList.add('error');
+      return;
+    }
+
+    setBusy(true);
+    statusEl.textContent = 'Getting a GPS fix — hold still…';
+    statusEl.classList.remove('error');
+    resultCard.classList.remove('visible');
+    stopWatch();
+
+    let bestFix = null;
+    let settleTimer = null;
+
+    // Watch for a few seconds and keep the most accurate fix, since a single
+    // getCurrentPosition call in the field is often noisy on first read.
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!bestFix || pos.coords.accuracy < bestFix.coords.accuracy) {
+          bestFix = pos;
+        }
+        if (!settleTimer) {
+          settleTimer = setTimeout(() => {
+            stopWatch();
+            setBusy(false);
+            if (bestFix) renderFix(bestFix);
+          }, 4000);
+        }
+      },
+      (err) => {
+        stopWatch();
+        setBusy(false);
+        statusEl.textContent = errorMessage(err);
+        statusEl.classList.add('error');
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    );
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    if (!lastFix) return;
+    const text = (cropType ? cropType + ': ' : '') + lastFix.latitude.toFixed(6) + ', ' + lastFix.longitude.toFixed(6);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Copied: ' + text);
+    } catch (e) {
+      showToast('Copy failed — coordinates: ' + text);
+    }
+  });
+
+  mapBtn.addEventListener('click', () => {
+    if (!lastFix) return;
+    const url = 'https://www.google.com/maps?q=' + lastFix.latitude.toFixed(6) + ',' + lastFix.longitude.toFixed(6);
+    window.open(url, '_blank', 'noopener');
+  });
+
+  shareBtn.addEventListener('click', async () => {
+    if (!lastFix) return;
+    const text = (cropType ? cropType + ' field — ' : 'Field location: ') + lastFix.latitude.toFixed(6) + ', ' + lastFix.longitude.toFixed(6);
+    const url = 'https://www.google.com/maps?q=' + lastFix.latitude.toFixed(6) + ',' + lastFix.longitude.toFixed(6);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: cropType ? cropType + ' Field Location' : 'Field Location', text, url });
+      } catch (e) { /* user cancelled — no action needed */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(text + ' — ' + url);
+        showToast('Copied link to clipboard');
+      } catch (e) {
+        showToast(text);
+      }
+    }
+  });
+
+  locateBtn.addEventListener('click', locate);
+  againBtn.addEventListener('click', locate);
+})();
+</script>
+
+</body>
+</html>
