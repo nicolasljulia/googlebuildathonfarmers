@@ -10,10 +10,7 @@ from app.data_sources.weather import get_weather_data
 from app.earth_engine.thermal import get_ecostress_data
 from app.earth_engine.vegetation import compute_vegetation_indices, get_sentinel_composite
 
-DEFAULT_FIELD_RADIUS_M = 60
-
-
-def analyze_irrigation(lat, lon, crop_type, radius_m=DEFAULT_FIELD_RADIUS_M):
+def analyze_irrigation(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
     init_earth_engine()
     field = ee.Geometry.Point([lon, lat]).buffer(radius_m)
     today = date.today().strftime('%Y-%m-%d')

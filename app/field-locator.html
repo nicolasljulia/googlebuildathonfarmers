@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GCropUp</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root {
     --bg: #f2f2f7;
@@ -201,6 +203,26 @@
   .locate-status { font-size: 13px; color: var(--text-dim); }
   .locate-status.error { color: var(--danger); }
 
+  .pin-map {
+    width: 100%;
+    height: 220px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .pin-hint { font-size: 12.5px; color: var(--text-dim); }
+  .text-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px 0;
+    align-self: flex-start;
+  }
+
   .typing-bubble {
     display: flex;
     gap: 4px;
@@ -248,6 +270,7 @@
   let cropType = '';
   let sessionId = null;
   let allCrops = [];
+  let fieldRadiusM = 60;
 
   function scrollToBottom() {
     thread.scrollTop = thread.scrollHeight;
@@ -434,9 +457,22 @@
     scrollToBottom();
   }
 
+  const GOOD_ACCURACY_M = 15;
+  const MAX_WAIT_MS = 8000;
+
   function askGpsLocation() {
     const wrap = addBotBubble('Stand in the middle of the field, then tap the button to share your location.');
     const controls = addControls(wrap);
+
+    if (!window.isSecureContext) {
+      const status = document.createElement('div');
+      status.className = 'locate-status error';
+      status.textContent = "Location only works over HTTPS or localhost — this page was opened over plain HTTP, so your browser is blocking it. Use the coordinates option below instead, or open this page via https.";
+      controls.appendChild(status);
+      appendSkipToManualLink(controls);
+      scrollToBottom();
+      return;
+    }
 
     const row = document.createElement('div');
     row.className = 'locate-row';
@@ -454,6 +490,22 @@
       if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     }
 
+    function finish(bestFix) {
+      stopWatch();
+      btn.classList.remove('pulse');
+      if (bestFix) {
+        const { latitude, longitude, accuracy } = bestFix.coords;
+        disable(controls);
+        addUserBubble(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (±${Math.round(accuracy)}m)`);
+        addBotBubble(`Got it — analyzing the ${fieldRadiusM}m area around that point.`);
+        beginAnalysis(true, latitude, longitude);
+      } else {
+        btn.disabled = false;
+        status.textContent = "Couldn't get a fix — try again, or use coordinates below.";
+        status.classList.add('error');
+      }
+    }
+
     btn.addEventListener('click', () => {
       if (!('geolocation' in navigator)) {
         status.textContent = "This browser doesn't support location.";
@@ -466,46 +518,78 @@
       status.classList.remove('error');
 
       let bestFix = null;
-      let settleTimer = null;
+      let settled = false;
+      const maxWaitTimer = setTimeout(() => { if (!settled) { settled = true; finish(bestFix); } }, MAX_WAIT_MS);
+
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
+          if (settled) return;
           if (!bestFix || pos.coords.accuracy < bestFix.coords.accuracy) bestFix = pos;
-          if (!settleTimer) {
-            settleTimer = setTimeout(() => {
-              stopWatch();
-              btn.classList.remove('pulse');
-              if (bestFix) {
-                const { latitude, longitude, accuracy } = bestFix.coords;
-                disable(controls);
-                addUserBubble(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (±${Math.round(accuracy)}m)`);
-                beginAnalysis(true, latitude, longitude);
-              } else {
-                btn.disabled = false;
-                status.textContent = "Couldn't get a fix — try again.";
-                status.classList.add('error');
-              }
-            }, 4000);
+          status.textContent = `Improving accuracy… ±${Math.round(bestFix.coords.accuracy)}m so far`;
+          if (bestFix.coords.accuracy <= GOOD_ACCURACY_M) {
+            settled = true;
+            clearTimeout(maxWaitTimer);
+            finish(bestFix);
           }
         },
         (err) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(maxWaitTimer);
           stopWatch();
           btn.classList.remove('pulse');
           btn.disabled = false;
           status.textContent = err.code === err.PERMISSION_DENIED
-            ? 'Location access denied — enable it in settings and try again.'
-            : "Couldn't get your location. Try again outdoors.";
+            ? 'Location access denied — enable it in settings and try again, or use coordinates below.'
+            : "Couldn't get your location. Try again outdoors, or use coordinates below.";
           status.classList.add('error');
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
       );
     });
 
+    appendSkipToManualLink(controls);
     scrollToBottom();
   }
 
+  function appendSkipToManualLink(controls) {
+    const skip = document.createElement('button');
+    skip.className = 'chip';
+    skip.style.alignSelf = 'flex-start';
+    skip.textContent = "I'll enter coordinates instead";
+    skip.addEventListener('click', () => {
+      disable(controls);
+      addUserBubble("I'll enter coordinates instead");
+      askManualLocation();
+    });
+    controls.appendChild(skip);
+  }
+
   function askManualLocation() {
-    const wrap = addBotBubble("No problem. Send me your field's coordinates.");
+    const wrap = addBotBubble('No problem. Tap the map where your field is.');
     const controls = addControls(wrap);
+
+    const mapDiv = document.createElement('div');
+    mapDiv.className = 'pin-map';
+    mapDiv.id = 'map-' + Math.random().toString(36).slice(2);
+
+    const hint = document.createElement('div');
+    hint.className = 'pin-hint';
+    hint.textContent = `Tap the map to drop a pin, or drag it to adjust. The shaded circle (~${fieldRadiusM}m) is the area that gets analyzed.`;
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'inline-btn';
+    confirmBtn.textContent = 'Use this pin';
+    confirmBtn.disabled = true;
+
+    const toggleLink = document.createElement('button');
+    toggleLink.className = 'text-link';
+    toggleLink.textContent = 'Type coordinates instead';
+
+    const coordsBox = document.createElement('div');
+    coordsBox.style.display = 'none';
+    coordsBox.style.flexDirection = 'column';
+    coordsBox.style.gap = '8px';
 
     const lat = document.createElement('input');
     lat.type = 'number'; lat.step = 'any'; lat.className = 'inline-input';
@@ -513,27 +597,93 @@
     const lon = document.createElement('input');
     lon.type = 'number'; lon.step = 'any'; lon.className = 'inline-input';
     lon.placeholder = 'Longitude (e.g. -121.1015)';
-    const sendBtn = document.createElement('button');
-    sendBtn.className = 'inline-btn';
-    sendBtn.textContent = 'Send location';
-    sendBtn.disabled = true;
+    const coordSendBtn = document.createElement('button');
+    coordSendBtn.className = 'inline-btn';
+    coordSendBtn.textContent = 'Send coordinates';
+    coordSendBtn.disabled = true;
 
-    function refresh() { sendBtn.disabled = lat.value === '' || lon.value === ''; }
-    lat.addEventListener('input', refresh);
-    lon.addEventListener('input', refresh);
-
-    sendBtn.addEventListener('click', () => {
+    function refreshCoords() { coordSendBtn.disabled = lat.value === '' || lon.value === ''; }
+    lat.addEventListener('input', refreshCoords);
+    lon.addEventListener('input', refreshCoords);
+    coordSendBtn.addEventListener('click', () => {
       const latVal = parseFloat(lat.value), lonVal = parseFloat(lon.value);
       if (Number.isNaN(latVal) || Number.isNaN(lonVal)) return;
       disable(controls);
       addUserBubble(`${latVal}, ${lonVal}`);
       beginAnalysis(false, latVal, lonVal);
     });
+    coordsBox.appendChild(lat);
+    coordsBox.appendChild(lon);
+    coordsBox.appendChild(coordSendBtn);
 
-    controls.appendChild(lat);
-    controls.appendChild(lon);
-    controls.appendChild(sendBtn);
+    toggleLink.addEventListener('click', () => {
+      const showingCoords = coordsBox.style.display !== 'none';
+      coordsBox.style.display = showingCoords ? 'none' : 'flex';
+      toggleLink.textContent = showingCoords ? 'Type coordinates instead' : 'Use the map instead';
+    });
+
+    controls.appendChild(mapDiv);
+    controls.appendChild(hint);
+    controls.appendChild(confirmBtn);
+    controls.appendChild(toggleLink);
+    controls.appendChild(coordsBox);
     scrollToBottom();
+
+    let pinLat = null, pinLon = null;
+
+    requestAnimationFrame(() => {
+      const map = L.map(mapDiv.id).setView([20, 0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map);
+
+      let marker = null;
+      let bufferCircle = null;
+      function setPin(latlng) {
+        pinLat = latlng.lat;
+        pinLon = latlng.lng;
+        confirmBtn.disabled = false;
+        if (marker) {
+          marker.setLatLng(latlng);
+          bufferCircle.setLatLng(latlng);
+        } else {
+          marker = L.marker(latlng, {draggable: true}).addTo(map);
+          bufferCircle = L.circle(latlng, {
+            radius: fieldRadiusM,
+            color: '#2e7d32',
+            weight: 1.5,
+            fillColor: '#2e7d32',
+            fillOpacity: 0.15,
+          }).addTo(map);
+          marker.on('drag', () => {
+            bufferCircle.setLatLng(marker.getLatLng());
+          });
+          marker.on('dragend', () => {
+            const p = marker.getLatLng();
+            pinLat = p.lat;
+            pinLon = p.lng;
+          });
+        }
+        map.fitBounds(bufferCircle.getBounds(), {maxZoom: 17, padding: [30, 30]});
+      }
+      map.on('click', (e) => setPin(e.latlng));
+
+      if (window.isSecureContext && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 14),
+          () => { },
+          { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+        );
+      }
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      if (pinLat === null || pinLon === null) return;
+      disable(controls);
+      addUserBubble(`${pinLat.toFixed(5)}, ${pinLon.toFixed(5)}`);
+      beginAnalysis(false, pinLat, pinLon);
+    });
   }
 
   async function beginAnalysis(onField, lat, lon) {
@@ -576,17 +726,38 @@
     } else if (prompt.stage === 'AWAITING_CONTINUE') {
       const resultMsg = prompt.message.replace(/\n\nWould you like to check anything else\?$/, '');
       addBotBubble(resultMsg);
+
+      const actions = prompt.result && Array.isArray(prompt.result.actions) ? prompt.result.actions : null;
+
       setTimeout(() => {
-        const wrap = addBotBubble('Would you like to check anything else?');
+        const wrap = addBotBubble(
+          actions && actions.length
+            ? 'Want to see what to do next, or check something else?'
+            : 'Would you like to check anything else?'
+        );
         const controls = addControls(wrap);
         const chipRow = document.createElement('div');
         chipRow.className = 'chip-row';
+
+        if (actions && actions.length) {
+          const nextChip = document.createElement('button');
+          nextChip.className = 'chip';
+          nextChip.textContent = 'See what to do next';
+          nextChip.addEventListener('click', () => {
+            nextChip.remove();
+            addUserBubble('See what to do next');
+            const lines = actions.map(a => `- [${a.urgency || 'When convenient'}] ${a.action}`);
+            addBotBubble(lines.join('\n'));
+          });
+          chipRow.appendChild(nextChip);
+        }
+
         const yesChip = document.createElement('button');
         yesChip.className = 'chip';
-        yesChip.textContent = 'Yes';
+        yesChip.textContent = 'Check something else';
         yesChip.addEventListener('click', () => {
           disable(controls);
-          addUserBubble('Yes');
+          addUserBubble('Check something else');
           sendReply('yes');
         });
         const noChip = document.createElement('button');
@@ -643,11 +814,12 @@
   async function init() {
     try {
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
-      const data = await Promise.race([
-        fetch(API_BASE + '/crops').then(r => r.json()),
-        timeout,
+      const [cropsData, configData] = await Promise.all([
+        Promise.race([fetch(API_BASE + '/crops').then(r => r.json()), timeout]),
+        Promise.race([fetch(API_BASE + '/config').then(r => r.json()), timeout]).catch(() => null),
       ]);
-      if (data.crops && data.crops.length) allCrops = data.crops;
+      if (cropsData.crops && cropsData.crops.length) allCrops = cropsData.crops;
+      if (configData && configData.field_radius_m) fieldRadiusM = configData.field_radius_m;
     } catch (e) { }
     askCrop();
   }

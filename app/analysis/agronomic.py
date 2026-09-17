@@ -3,7 +3,7 @@ from datetime import date
 
 import ee
 
-from app.config import init_earth_engine
+from app.config import FIELD_RADIUS_M, init_earth_engine
 from app.data_sources.climate import get_climate_class
 from app.data_sources.crop_recommendations import (
     get_climate_matched_crops,
@@ -13,10 +13,7 @@ from app.data_sources.maxent import get_maxent_suitability
 from app.data_sources.soil import get_soil_data_at_point
 from app.earth_engine.vegetation import compute_vegetation_indices, get_sentinel_composite
 
-DEFAULT_FIELD_RADIUS_M = 60
-
-
-def analyze_agronomic_recommendations(lat, lon, crop_type, radius_m=DEFAULT_FIELD_RADIUS_M):
+def analyze_agronomic_recommendations(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
     init_earth_engine()
     field = ee.Geometry.Point([lon, lat]).buffer(radius_m)
     today = date.today().strftime('%Y-%m-%d')
