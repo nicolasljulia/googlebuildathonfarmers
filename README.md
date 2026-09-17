@@ -2,7 +2,7 @@
 
 Seems to be broken: https://moscow-classifieds-chart-steal.trycloudflare.com/field-locator
 
-New URL: https://sage-openfarm-l3rpuhkpxq-uc.a.run.app/field-locator
+New URL: https://sage-openfarm-940053925352.us-central1.run.app/field-locator
 
 A WhatsApp/SMS-style chat interface for farmers, built on the same Google
 Earth Engine + soil/weather/climate data stack as [OpenFarm](https://github.com/nicolasljulia/googlebuildathonfarmers)
