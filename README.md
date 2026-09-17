@@ -1,5 +1,7 @@
 # OpenFarm Messaging
 
+https://moscow-classifieds-chart-steal.trycloudflare.com/field-locator
+
 A WhatsApp/SMS-style chat interface for farmers, built on the same Google
 Earth Engine + soil/weather/climate data stack as [OpenFarm](https://github.com/nicolasljulia/googlebuildathonfarmers)
 (the drawn-field web app), but driven by natural language instead of a map.
