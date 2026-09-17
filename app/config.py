@@ -40,3 +40,5 @@ DISEASE_LIBRARY_PATH = os.getenv(
 MAXENT_TIF_DIR = os.getenv("MAXENT_TIF_DIR", os.path.join(DATA_DIR, "maxent_tifs"))
 MAXENT_DB_PATH = os.getenv("MAXENT_DB_PATH", os.path.join(DATA_DIR, "maxent_suitability.db"))
 KOPPEN_DIR = os.getenv("KOPPEN_DIR", os.path.join(DATA_DIR, "koppen"))
+
+FIELD_RADIUS_M = int(os.getenv("FIELD_RADIUS_M", "60"))
