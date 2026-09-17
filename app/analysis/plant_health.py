@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 
 import ee
 
-from app.config import init_earth_engine
+from app.config import FIELD_RADIUS_M, init_earth_engine
 from app.data_sources.rules_engine import run_rules_engine
 from app.data_sources.soil import get_soil_data_at_point
 from app.data_sources.weather import get_weather_data
@@ -15,10 +15,7 @@ from app.earth_engine.vegetation import (
 )
 
 
-DEFAULT_FIELD_RADIUS_M = 60
-
-
-def analyze_plant_health(lat, lon, crop_type, radius_m=DEFAULT_FIELD_RADIUS_M):
+def analyze_plant_health(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
     init_earth_engine()
     field = ee.Geometry.Point([lon, lat]).buffer(radius_m)
     today = date.today().strftime('%Y-%m-%d')
