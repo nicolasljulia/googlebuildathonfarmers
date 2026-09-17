@@ -87,8 +87,21 @@
     letter-spacing: 0.3px;
     flex: 0 0 auto;
   }
+  .chat-header .identity { flex: 1 1 auto; min-width: 0; }
   .chat-header .title { font-size: 16px; font-weight: 700; }
   .chat-header .status { font-size: 12px; color: var(--text-dim); }
+  .chat-header .openfarm-link {
+    flex: 0 0 auto;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1.5px solid var(--accent);
+    border-radius: 16px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+  .chat-header .openfarm-link:active { background: var(--accent); color: white; }
 
   .thread {
     flex: 1 1 auto;
@@ -267,10 +280,11 @@
 <div class="phone">
   <div class="chat-header">
     <div class="avatar">Sg</div>
-    <div>
+    <div class="identity">
       <div class="title">Sage</div>
       <div class="status" id="headerStatus">Online</div>
     </div>
+    <a class="openfarm-link" href="https://nicolasljulia-openfarm.hf.space" target="_blank" rel="noopener">Open OpenFarm</a>
   </div>
   <div class="thread" id="thread"></div>
   <div class="composer-spacer"></div>
