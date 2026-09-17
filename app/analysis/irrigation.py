@@ -3,7 +3,7 @@ from datetime import date
 
 import ee
 
-from app.config import init_earth_engine
+from app.config import FIELD_RADIUS_M, init_earth_engine
 from app.data_sources.soil import get_soil_data_at_point
 from app.data_sources.soil_recommendations import get_soil_informed_recommendations
 from app.data_sources.weather import get_weather_data
