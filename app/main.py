@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.analysis.agronomic import analyze_agronomic_recommendations
 from app.analysis.irrigation import analyze_irrigation
 from app.analysis.plant_health import analyze_plant_health
+from app.config import FIELD_RADIUS_M
 from app.conversation.flow import FlowError, start_session, submit
 from app.data_sources.crops import ALL_CROPS
 
@@ -68,6 +69,11 @@ def chat_reply(session_id: str, req: ReplyRequest):
 @app.get("/crops")
 def crops():
     return {"crops": ALL_CROPS}
+
+
+@app.get("/config")
+def config():
+    return {"field_radius_m": FIELD_RADIUS_M}
 
 
 @app.get("/field-locator")
