@@ -17,6 +17,40 @@ def get_sentinel_composite(field, start, end):
     return col.median(), date_str
 
 
+INDEX_VIS = {
+    'NDVI': {
+        'min': 0.0, 'max': 0.8,
+        'palette': ['#d73027', '#f46d43', '#fdae61', '#fee08b',
+                    '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'],
+        'caption': 'NDVI — red is stressed, green is healthy',
+    },
+    'NDMI': {
+        'min': -0.4, 'max': 0.4,
+        'palette': ['#8c510a', '#d8b365', '#f6e8c3', '#f5f5f5',
+                    '#c7eae5', '#5ab4ac', '#01665e'],
+        'caption': 'NDMI — brown is dry, teal is moist',
+    },
+}
+
+
+def get_index_thumbnail_url(img, field, index='NDVI', dimensions=480):
+    if index == 'NDVI':
+        band = img.normalizedDifference(['B8', 'B4'])
+    elif index == 'NDMI':
+        band = img.normalizedDifference(['B8', 'B11'])
+    else:
+        raise ValueError(f"Unsupported index for thumbnail: {index}")
+
+    vis = INDEX_VIS[index]
+    return band.clip(field).getThumbURL({
+        'min': vis['min'],
+        'max': vis['max'],
+        'palette': vis['palette'],
+        'region': field,
+        'dimensions': dimensions,
+    })
+
+
 def compute_vegetation_indices(img, field, early_img=None):
     
     b2  = img.select('B2').divide(10000)

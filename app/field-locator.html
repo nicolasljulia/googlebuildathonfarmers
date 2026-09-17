@@ -211,6 +211,20 @@
     overflow: hidden;
   }
   .pin-hint { font-size: 12.5px; color: var(--text-dim); }
+
+  .image-bubble { padding: 8px; }
+  .snapshot-img {
+    display: block;
+    width: 100%;
+    max-width: 260px;
+    border-radius: 12px;
+  }
+  .snapshot-caption {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 4px 2px;
+  }
+
   .text-link {
     background: none;
     border: none;
@@ -288,6 +302,38 @@
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = text;
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = fmtTime();
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+    row.appendChild(wrap);
+    thread.appendChild(row);
+    scrollToBottom();
+    return wrap;
+  }
+
+  function addBotImageBubble(url, caption) {
+    const row = document.createElement('div');
+    row.className = 'row bot';
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble image-bubble';
+
+    const img = document.createElement('img');
+    img.className = 'snapshot-img';
+    img.src = url;
+    img.alt = caption || 'Analysis map snapshot';
+    bubble.appendChild(img);
+
+    if (caption) {
+      const cap = document.createElement('div');
+      cap.className = 'snapshot-caption';
+      cap.textContent = caption;
+      bubble.appendChild(cap);
+    }
+
     const time = document.createElement('div');
     time.className = 'msg-time';
     time.textContent = fmtTime();
@@ -726,6 +772,10 @@
     } else if (prompt.stage === 'AWAITING_CONTINUE') {
       const resultMsg = prompt.message.replace(/\n\nWould you like to check anything else\?$/, '');
       addBotBubble(resultMsg);
+
+      if (prompt.result && prompt.result.map_snapshot_url) {
+        addBotImageBubble(prompt.result.map_snapshot_url, prompt.result.map_caption);
+      }
 
       const actions = prompt.result && Array.isArray(prompt.result.actions) ? prompt.result.actions : null;
 

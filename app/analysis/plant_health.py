@@ -11,6 +11,7 @@ from app.earth_engine.thermal import get_ecostress_data
 from app.earth_engine.vegetation import (
     compute_vegetation_indices,
     get_historical_snapshot,
+    get_index_thumbnail_url,
     get_sentinel_composite,
 )
 
@@ -104,6 +105,14 @@ def analyze_plant_health(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
         if r.get("recommendation")
     ]
 
+    try:
+        map_snapshot_url = get_index_thumbnail_url(img, field, index='NDVI')
+        map_caption = "NDVI — red is stressed, green is healthy"
+    except Exception as e:
+        print(f"[MAP SNAPSHOT] Error: {e}")
+        map_snapshot_url = None
+        map_caption = None
+
     return {
         "ndvi": veg["ndvi"],
         "ndvi_change": veg["ndvi_change"],
@@ -121,6 +130,8 @@ def analyze_plant_health(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
         "crop_type": crop_type,
         "historical": historical,
         "ecostress": ecostress,
+        "map_snapshot_url": map_snapshot_url,
+        "map_caption": map_caption,
         "data_sources": {
             "satellite": satellite_date,
             "weather": date.today().strftime('%d %b %Y'),

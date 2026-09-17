@@ -8,7 +8,7 @@ from app.data_sources.soil import get_soil_data_at_point
 from app.data_sources.soil_recommendations import get_soil_informed_recommendations
 from app.data_sources.weather import get_weather_data
 from app.earth_engine.thermal import get_ecostress_data
-from app.earth_engine.vegetation import compute_vegetation_indices, get_sentinel_composite
+from app.earth_engine.vegetation import compute_vegetation_indices, get_index_thumbnail_url, get_sentinel_composite
 
 def analyze_irrigation(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
     init_earth_engine()
@@ -51,6 +51,14 @@ def analyze_irrigation(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
         soil, veg["ndmi"], mean_ndwi, veg["ndvi"], weather, crop_type
     ) if not soil.get("error") else []
 
+    try:
+        map_snapshot_url = get_index_thumbnail_url(img, field, index='NDMI')
+        map_caption = "NDMI — brown is dry, teal is moist"
+    except Exception as e:
+        print(f"[MAP SNAPSHOT] Error: {e}")
+        map_snapshot_url = None
+        map_caption = None
+
     return {
         "moisture_status": veg["moisture"],
         "ndmi": veg["ndmi"],
@@ -62,6 +70,8 @@ def analyze_irrigation(lat, lon, crop_type, radius_m=FIELD_RADIUS_M):
         "soil": soil,
         "recommendations": soil_recs,
         "crop_type": crop_type,
+        "map_snapshot_url": map_snapshot_url,
+        "map_caption": map_caption,
         "data_sources": {
             "satellite": satellite_date,
             "weather": date.today().strftime('%d %b %Y'),
