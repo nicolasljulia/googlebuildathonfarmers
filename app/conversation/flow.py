@@ -11,7 +11,7 @@ from app.conversation.session import (
     get_session,
 )
 
-MENU_PAGE_SIZE = 2
+MENU_COLLAPSED_SIZE = 2
 
 YES_VALUES = {"yes", "y", "true", "1"}
 NO_VALUES = {"no", "n", "false", "0"}
@@ -56,11 +56,13 @@ def _location_prompt(session):
 
 def _feature_menu_prompt(session):
     ordered = [FEATURES_BY_ID[fid] for fid in session.feature_order]
-    page = ordered[session.menu_offset: session.menu_offset + MENU_PAGE_SIZE]
-    remaining = len(ordered) - (session.menu_offset + MENU_PAGE_SIZE)
+    if session.menu_expanded or len(ordered) <= MENU_COLLAPSED_SIZE:
+        page = ordered
+    else:
+        page = ordered[:MENU_COLLAPSED_SIZE]
     options = [{"id": f["id"], "label": f["label"]} for f in page]
-    if remaining > 0:
-        options.append({"id": "more", "label": "Something else"})
+    if not session.menu_expanded and len(ordered) > MENU_COLLAPSED_SIZE:
+        options.append({"id": "all", "label": "See all features"})
     return {
         "session_id": session.id,
         "stage": session.stage,
@@ -133,13 +135,13 @@ def submit(session_id, value):
         lat, lon = _parse_location(value)
         session.lat, session.lon = lat, lon
         session.stage = STAGE_FEATURE_CHOICE
-        session.menu_offset = 0
+        session.menu_expanded = False
         return _feature_menu_prompt(session)
 
     if session.stage == STAGE_FEATURE_CHOICE:
         choice = str(value)
-        if choice == "more":
-            session.menu_offset += MENU_PAGE_SIZE
+        if choice == "all":
+            session.menu_expanded = True
             return _feature_menu_prompt(session)
 
         feature = FEATURES_BY_ID.get(choice)
@@ -167,7 +169,7 @@ def submit(session_id, value):
             session.stage = STAGE_DONE
             return _done_prompt(session, "Thanks! Reach out anytime you need another check.")
         session.stage = STAGE_FEATURE_CHOICE
-        session.menu_offset = 0
+        session.menu_expanded = False
         return _feature_menu_prompt(session)
 
     if session.stage == STAGE_DONE:

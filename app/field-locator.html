@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>GCropUp</title>
+<title>Sage</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -213,11 +213,12 @@
   .pin-hint { font-size: 12.5px; color: var(--text-dim); }
 
   .image-bubble { padding: 8px; }
-  .snapshot-img {
-    display: block;
+  .snapshot-map {
     width: 100%;
     max-width: 260px;
+    height: 220px;
     border-radius: 12px;
+    overflow: hidden;
   }
   .snapshot-caption {
     font-size: 12px;
@@ -265,9 +266,9 @@
 
 <div class="phone">
   <div class="chat-header">
-    <div class="avatar">GC</div>
+    <div class="avatar">Sg</div>
     <div>
-      <div class="title">GCropUp</div>
+      <div class="title">Sage</div>
       <div class="status" id="headerStatus">Online</div>
     </div>
   </div>
@@ -313,7 +314,7 @@
     return wrap;
   }
 
-  function addBotImageBubble(url, caption) {
+  function addBotMapBubble(tileUrl, center, radiusM, caption) {
     const row = document.createElement('div');
     row.className = 'row bot';
     const wrap = document.createElement('div');
@@ -321,11 +322,10 @@
     const bubble = document.createElement('div');
     bubble.className = 'bubble image-bubble';
 
-    const img = document.createElement('img');
-    img.className = 'snapshot-img';
-    img.src = url;
-    img.alt = caption || 'Analysis map snapshot';
-    bubble.appendChild(img);
+    const mapDiv = document.createElement('div');
+    mapDiv.className = 'snapshot-map';
+    mapDiv.id = 'resultmap-' + Math.random().toString(36).slice(2);
+    bubble.appendChild(mapDiv);
 
     if (caption) {
       const cap = document.createElement('div');
@@ -342,6 +342,23 @@
     row.appendChild(wrap);
     thread.appendChild(row);
     scrollToBottom();
+
+    requestAnimationFrame(() => {
+      const map = L.map(mapDiv.id, {scrollWheelZoom: false}).setView([center.lat, center.lon], 18);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri',
+      }).addTo(map);
+      L.tileLayer(tileUrl, { opacity: 0.7, maxZoom: 19 }).addTo(map);
+      const boundaryCircle = L.circle([center.lat, center.lon], {
+        radius: radiusM,
+        color: '#ffffff',
+        weight: 1.5,
+        fill: false,
+      }).addTo(map);
+      map.fitBounds(boundaryCircle.getBounds(), {maxZoom: 19, padding: [20, 20]});
+    });
+
     return wrap;
   }
 
@@ -414,7 +431,7 @@
   }
 
   function askCrop() {
-    const wrap = addBotBubble("Hi, I'm GCropUp. What's growing in your field?");
+    const wrap = addBotBubble("Hi, I'm Sage. What's growing in your field?");
     const controls = addControls(wrap);
 
     const select = document.createElement('select');
@@ -678,10 +695,10 @@
     let pinLat = null, pinLon = null;
 
     requestAnimationFrame(() => {
-      const map = L.map(mapDiv.id).setView([20, 0], 2);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      const map = L.map(mapDiv.id, {scrollWheelZoom: false}).setView([20, 0], 2);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors',
+        attribution: 'Tiles &copy; Esri',
       }).addTo(map);
 
       let marker = null;
@@ -773,8 +790,13 @@
       const resultMsg = prompt.message.replace(/\n\nWould you like to check anything else\?$/, '');
       addBotBubble(resultMsg);
 
-      if (prompt.result && prompt.result.map_snapshot_url) {
-        addBotImageBubble(prompt.result.map_snapshot_url, prompt.result.map_caption);
+      if (prompt.result && prompt.result.map_tile_url) {
+        addBotMapBubble(
+          prompt.result.map_tile_url,
+          prompt.result.map_center,
+          prompt.result.map_radius_m || fieldRadiusM,
+          prompt.result.map_caption
+        );
       }
 
       const actions = prompt.result && Array.isArray(prompt.result.actions) ? prompt.result.actions : null;

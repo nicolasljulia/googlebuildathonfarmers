@@ -33,22 +33,21 @@ INDEX_VIS = {
 }
 
 
-def get_index_thumbnail_url(img, field, index='NDVI', dimensions=480):
+def get_index_map_tile_url(img, field, index='NDVI'):
     if index == 'NDVI':
         band = img.normalizedDifference(['B8', 'B4'])
     elif index == 'NDMI':
         band = img.normalizedDifference(['B8', 'B11'])
     else:
-        raise ValueError(f"Unsupported index for thumbnail: {index}")
+        raise ValueError(f"Unsupported index for map overlay: {index}")
 
     vis = INDEX_VIS[index]
-    return band.clip(field).getThumbURL({
+    map_id_dict = band.clip(field).getMapId({
         'min': vis['min'],
         'max': vis['max'],
         'palette': vis['palette'],
-        'region': field,
-        'dimensions': dimensions,
     })
+    return map_id_dict['tile_fetcher'].url_format
 
 
 def compute_vegetation_indices(img, field, early_img=None):

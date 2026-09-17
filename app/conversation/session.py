@@ -20,7 +20,7 @@ class Session:
     lat: Optional[float] = None
     lon: Optional[float] = None
     location_variant: Optional[str] = None
-    menu_offset: int = 0
+    menu_expanded: bool = False
     last_result: Optional[dict] = None
     feature_order: list = field(default_factory=lambda: [f["id"] for f in FEATURE_REGISTRY])
 
